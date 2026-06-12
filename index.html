@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>D&D Initiative Tracker</title>
+	<link rel="stylesheet" href="./main.css">
+	<script src="https://kit.fontawesome.com/8692a9f066.js" crossorigin="anonymous"></script>
+</head>
+
+<body>
+	<main>
+		<table>
+			<thead>
+				<tr>
+					<th>Name</th>
+					<th>Team</th>
+					<th>Initiative Roll</th>
+					<th>Initiative Modifier</th>
+					<th>Armor Class</th>
+					<th>Remaining HP</th>
+					<th>Max HP</th>
+					<th>Damage/Healing</th>
+					<th></th>
+					<th></th>
+					<th></th>
+					<th>Reference</th>
+					<th>Conditions</th>
+					<th>Notes</th>
+					<th>Manage</th>
+					<th></th>
+					<th></th>
+				</tr>
+			</thead>
+			<tbody id="CharacterList"></tbody>
+		</table>
+	</main>
+	<nav>
+		<button id="AddButton" onclick="addCreature()"><i class="fa-solid fa-plus"></i></button>
+		<button id="NextTurnButton"><i class="fa-solid fa-arrow-right"></i></button>
+		<button id="SortButton"><i class="fa-solid fa-arrow-down-a-z"></i></button>
+		<!-- <i class="fa-solid fa-arrow-down-9-1"></i> -->
+	</nav>
+	<script src="./scripts/out/Creature.js"></script>
+	<script src="./scripts/out/main.js"></script>
+</body>
+
+</html>

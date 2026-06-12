@@ -1,0 +1,72 @@
+html {
+	color-scheme: light dark;
+	text-align: center;
+	box-sizing: border-box;
+}
+
+html, body {
+	width: 100%;
+	height: 100%;
+	margin: 0;
+}
+
+main {
+	width: 100%;
+	height: 90%;
+	padding: 10px;
+}
+
+table {
+	border-collapse: collapse;
+}
+
+th, td {
+	border: solid thin;
+	padding: 0px 10px;
+}
+
+nav {
+	position: fixed;
+	bottom: 0;
+	width: 100%;
+	height: 10%;
+	background-color: var(--primary-color);
+	padding: 10px 0;
+	border-top: solid thin;
+}
+
+nav button {
+	height: 2em;
+	font-size: 1.5em;
+	padding: 0 15px;
+	cursor: pointer;
+	margin: 0 5px;
+}
+
+.teamPc {
+	background-color: yellow;
+}
+
+.teamAlly {
+	background-color: lime;
+}
+
+.teamNeutral {
+	background-color: orange;
+}
+
+.teamEnemy {
+	background-color: red;
+}
+
+#AddButton {
+	color: limegreen;
+}
+
+#NextTurnButton {
+	color: skyblue;
+}
+
+#SortButton {
+	color: dodgerblue;
+}
