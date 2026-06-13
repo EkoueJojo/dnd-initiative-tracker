@@ -1,12 +1,12 @@
 enum Team {
-	Pc = 0,
+	PC = 0,
 	Ally = 1,
 	Neutral = 2,
 	Enemy = 3
 }
 
 const TeamStyles: { [key in Team]: string } = {
-	[Team.Pc]: "teamPc",
+	[Team.PC]: "teamPc",
 	[Team.Ally]: "teamAlly",
 	[Team.Neutral]: "teamNeutral",
 	[Team.Enemy]: "teamEnemy"
@@ -23,11 +23,11 @@ class Creature {
 	armorClass: number;
 
 	maxHp: number | null;
-	damageTaken: number | null;
+	damageTaken: number;
 	hpLowerRange: number | null;
 	hpUpperRange: number | null;
 	conditions: string[];
-	reference: string | null;
+	reference: string;
 	referenceIsUrl: boolean;
 	notes: string;
 
@@ -50,15 +50,23 @@ class Creature {
 
 	static getTeamStyles(creature: Creature): string { return TeamStyles[creature.team]; }
 	static getRemainingHp(creature: Creature): number | null {
-		if (creature.maxHp === null || creature.damageTaken === null) {
+		if (creature.maxHp === null) {
 			return null;
 		}
 
 		return creature.maxHp - creature.damageTaken;
 	}
 
+	static inflictWounds(creature: Creature, amount: number) {
+		if (creature.maxHp == null || amount < 0) {
+			return;
+		}
+
+		creature.damageTaken += amount;
+	}
+
 	static cureWounds(creature: Creature, amount: number) {
-		if (creature.maxHp == null || creature.damageTaken == null) {
+		if (creature.maxHp == null || amount < 0) {
 			return;
 		}
 
@@ -67,14 +75,6 @@ class Creature {
 		if (creature.damageTaken < 0) {
 			creature.damageTaken = 0;
 		}
-	}
-
-	static inflictWounds(creature: Creature, amount: number) {
-		if (creature.maxHp == null || creature.damageTaken == null) {
-			return;
-		}
-
-		creature.damageTaken += amount;
 	}
 
 	static compareTo(a: Creature, b: Creature): number {

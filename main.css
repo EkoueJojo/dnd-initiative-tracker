@@ -26,6 +26,10 @@ th, td {
 	padding: 0px 10px;
 }
 
+td {
+	padding: 0;
+}
+
 nav {
 	position: fixed;
 	bottom: 0;
@@ -34,6 +38,11 @@ nav {
 	background-color: var(--primary-color);
 	padding: 10px 0;
 	border-top: solid thin;
+}
+
+input[type="number"] {
+	width: 3em;
+	text-align: center;
 }
 
 nav button {
@@ -58,6 +67,23 @@ nav button {
 
 .teamEnemy {
 	background-color: red;
+}
+
+.down {
+	background-color: gray;
+}
+
+.damageToInflictCure {
+	background-color: transparent;
+	border: none;
+}
+
+.inflict {
+	color: red;
+}
+
+.cure {
+	color: lightseagreen;
 }
 
 #AddButton {

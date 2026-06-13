@@ -1,13 +1,13 @@
 "use strict";
 var Team;
 (function (Team) {
-    Team[Team["Pc"] = 0] = "Pc";
+    Team[Team["PC"] = 0] = "PC";
     Team[Team["Ally"] = 1] = "Ally";
     Team[Team["Neutral"] = 2] = "Neutral";
     Team[Team["Enemy"] = 3] = "Enemy";
 })(Team || (Team = {}));
 const TeamStyles = {
-    [Team.Pc]: "teamPc",
+    [Team.PC]: "teamPc",
     [Team.Ally]: "teamAlly",
     [Team.Neutral]: "teamNeutral",
     [Team.Enemy]: "teamEnemy"
@@ -31,25 +31,25 @@ class Creature {
     }
     static getTeamStyles(creature) { return TeamStyles[creature.team]; }
     static getRemainingHp(creature) {
-        if (creature.maxHp === null || creature.damageTaken === null) {
+        if (creature.maxHp === null) {
             return null;
         }
         return creature.maxHp - creature.damageTaken;
     }
+    static inflictWounds(creature, amount) {
+        if (creature.maxHp == null || amount < 0) {
+            return;
+        }
+        creature.damageTaken += amount;
+    }
     static cureWounds(creature, amount) {
-        if (creature.maxHp == null || creature.damageTaken == null) {
+        if (creature.maxHp == null || amount < 0) {
             return;
         }
         creature.damageTaken -= amount;
         if (creature.damageTaken < 0) {
             creature.damageTaken = 0;
         }
-    }
-    static inflictWounds(creature, amount) {
-        if (creature.maxHp == null || creature.damageTaken == null) {
-            return;
-        }
-        creature.damageTaken += amount;
     }
     static compareTo(a, b) {
         let teamComparison = a.team - b.team;
