@@ -54,7 +54,26 @@ function addRow(creature: Creature) {
 		saveData();
 	});
 
+	let teamCell = document.createElement("td");
+	let teamSelect = document.createElement("select");
+	for (let team in Team) {
+		if (!isNaN(Number(team)))
+		{
+			let option = document.createElement("option");
+			option.value = team;
+			option.text = Team[team];
+			teamSelect.appendChild(option);
+		}
+	}
+	teamSelect.value = creature.team.toString();
+	teamSelect.addEventListener("change", () => {
+		creature.team = parseInt(teamSelect.value) as Team;
+		saveData();
+	});
+	teamCell.appendChild(teamSelect);
+
 	newRow.appendChild(nameCell);
+	newRow.appendChild(teamCell);
 	CharacterListElement.appendChild(newRow);
 }
 
