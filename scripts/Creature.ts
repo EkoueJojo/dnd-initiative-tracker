@@ -14,6 +14,7 @@ const TeamStyles: { [key in Team]: string } = {
 
 class Creature {
 	static autoIncrement = 1;
+	static readonly DEFAULT_NAME = "New Creature";
 
 	id: string;
 	name: string;
@@ -23,28 +24,29 @@ class Creature {
 	armorClass: number;
 
 	maxHp: number | null;
-	damageTaken: number;
+	wounds: number;
 	hpLowerRange: number | null;
 	hpUpperRange: number | null;
-	conditions: string[];
+	conditions: string;
 	reference: string;
-	referenceIsUrl: boolean;
+	referenceUrl: string;
 	notes: string;
 
 	constructor(id: string, name: string = "", team: Team = Team.Neutral, initiativeModifier: number = 0, armorClass: number = 10, maxHp: number | null = 8) {
 		this.id = id;
-		this.name = name;
+		this.name = name.trim();
+		if (this.name == "") this.name = Creature.DEFAULT_NAME;
 		this.team = team;
 		this.initiativeRoll = null;
 		this.initiativeModifier = initiativeModifier;
 		this.armorClass = armorClass;
 		this.maxHp = maxHp;
-		this.damageTaken = 0;
+		this.wounds = 0;
 		this.hpLowerRange = null;
 		this.hpUpperRange = null;
-		this.conditions = [];
+		this.conditions = "";
 		this.reference = "";
-		this.referenceIsUrl = false;
+		this.referenceUrl = "";
 		this.notes = "";
 	}
 
@@ -54,7 +56,7 @@ class Creature {
 			return null;
 		}
 
-		return creature.maxHp - creature.damageTaken;
+		return creature.maxHp - creature.wounds;
 	}
 
 	static inflictWounds(creature: Creature, amount: number) {
@@ -62,7 +64,7 @@ class Creature {
 			return;
 		}
 
-		creature.damageTaken += amount;
+		creature.wounds += amount;
 	}
 
 	static cureWounds(creature: Creature, amount: number) {
@@ -70,10 +72,10 @@ class Creature {
 			return;
 		}
 
-		creature.damageTaken -= amount;
+		creature.wounds -= amount;
 
-		if (creature.damageTaken < 0) {
-			creature.damageTaken = 0;
+		if (creature.wounds < 0) {
+			creature.wounds = 0;
 		}
 	}
 

@@ -15,18 +15,20 @@ const TeamStyles = {
 class Creature {
     constructor(id, name = "", team = Team.Neutral, initiativeModifier = 0, armorClass = 10, maxHp = 8) {
         this.id = id;
-        this.name = name;
+        this.name = name.trim();
+        if (this.name == "")
+            this.name = Creature.DEFAULT_NAME;
         this.team = team;
         this.initiativeRoll = null;
         this.initiativeModifier = initiativeModifier;
         this.armorClass = armorClass;
         this.maxHp = maxHp;
-        this.damageTaken = 0;
+        this.wounds = 0;
         this.hpLowerRange = null;
         this.hpUpperRange = null;
-        this.conditions = [];
+        this.conditions = "";
         this.reference = "";
-        this.referenceIsUrl = false;
+        this.referenceUrl = "";
         this.notes = "";
     }
     static getTeamStyles(creature) { return TeamStyles[creature.team]; }
@@ -34,21 +36,21 @@ class Creature {
         if (creature.maxHp === null) {
             return null;
         }
-        return creature.maxHp - creature.damageTaken;
+        return creature.maxHp - creature.wounds;
     }
     static inflictWounds(creature, amount) {
         if (creature.maxHp == null || amount < 0) {
             return;
         }
-        creature.damageTaken += amount;
+        creature.wounds += amount;
     }
     static cureWounds(creature, amount) {
         if (creature.maxHp == null || amount < 0) {
             return;
         }
-        creature.damageTaken -= amount;
-        if (creature.damageTaken < 0) {
-            creature.damageTaken = 0;
+        creature.wounds -= amount;
+        if (creature.wounds < 0) {
+            creature.wounds = 0;
         }
     }
     static compareTo(a, b) {
@@ -68,3 +70,4 @@ class Creature {
     }
 }
 Creature.autoIncrement = 1;
+Creature.DEFAULT_NAME = "New Creature";

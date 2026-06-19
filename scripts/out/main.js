@@ -8,8 +8,8 @@ var Columns;
     Columns[Columns["ArmorClass"] = 4] = "ArmorClass";
     Columns[Columns["RemainingHp"] = 5] = "RemainingHp";
     Columns[Columns["MaxHp"] = 6] = "MaxHp";
-    Columns[Columns["DamageTaken"] = 7] = "DamageTaken";
-    Columns[Columns["DamageToInflictCure"] = 8] = "DamageToInflictCure";
+    Columns[Columns["WoundsTaken"] = 7] = "WoundsTaken";
+    Columns[Columns["WoundsToInflictCure"] = 8] = "WoundsToInflictCure";
     Columns[Columns["InflictButton"] = 9] = "InflictButton";
     Columns[Columns["CureButton"] = 10] = "CureButton";
     Columns[Columns["Reference"] = 11] = "Reference";
@@ -50,8 +50,18 @@ function addRow(creature) {
     nameCell.contentEditable = "true";
     nameCell.innerText = creature.name;
     nameCell.addEventListener("input", () => {
-        creature.name = nameCell.innerText;
-        saveData();
+        let value = nameCell.innerText.trim();
+        if (value != "") {
+            creature.name = value;
+            saveData();
+        }
+    });
+    nameCell.addEventListener("focusout", () => {
+        if (nameCell.innerText.trim() == "") {
+            creature.name = Creature.DEFAULT_NAME;
+            nameCell.innerText = Creature.DEFAULT_NAME;
+            saveData();
+        }
     });
     let teamCell = document.createElement("td");
     let teamSelect = document.createElement("select");
@@ -113,26 +123,26 @@ function addRow(creature) {
         saveData();
     });
     maxHpCell.appendChild(maxHpField);
-    let damageTakenCell = document.createElement("td");
-    damageTakenCell.innerText = creature.damageTaken.toString();
-    let damageToInflictCureCell = document.createElement("td");
-    let damageToInflictCureField = document.createElement("input");
-    damageToInflictCureField.type = "number";
-    damageToInflictCureField.className = "damageToInflictCure";
-    damageToInflictCureCell.appendChild(damageToInflictCureField);
+    let woundsCell = document.createElement("td");
+    woundsCell.innerText = creature.wounds.toString();
+    let woundsToInflictCureCell = document.createElement("td");
+    let woundsToInflictCureField = document.createElement("input");
+    woundsToInflictCureField.type = "number";
+    woundsToInflictCureField.className = "woundsToInflictCure";
+    woundsToInflictCureCell.appendChild(woundsToInflictCureField);
     let inflictCell = document.createElement("td");
     let inflictButton = document.createElement("button");
     inflictButton.innerText = "Inflict";
     inflictButton.className = "inflict";
     inflictButton.addEventListener("click", () => {
         var _a;
-        let value = damageToInflictCureField.valueAsNumber;
+        let value = woundsToInflictCureField.valueAsNumber;
         if (isNaN(value)) {
             return;
         }
         Creature.inflictWounds(creature, value);
-        damageTakenCell.innerText = creature.damageTaken.toString();
-        damageToInflictCureField.value = "";
+        woundsCell.innerText = creature.wounds.toString();
+        woundsToInflictCureField.value = "";
         let hp = Creature.getRemainingHp(creature);
         remainingHpCell.innerText = (_a = hp === null || hp === void 0 ? void 0 : hp.toString()) !== null && _a !== void 0 ? _a : "-";
         newRow.classList.toggle("down", hp != null && hp <= 0);
@@ -145,13 +155,13 @@ function addRow(creature) {
     cureButton.className = "cure";
     cureButton.addEventListener("click", () => {
         var _a, _b, _c;
-        let value = damageToInflictCureField.valueAsNumber;
+        let value = woundsToInflictCureField.valueAsNumber;
         if (isNaN(value)) {
             return;
         }
         Creature.cureWounds(creature, value);
-        damageTakenCell.innerText = creature.damageTaken.toString();
-        damageToInflictCureField.value = "";
+        woundsCell.innerText = creature.wounds.toString();
+        woundsToInflictCureField.value = "";
         remainingHpCell.innerText = (_b = (_a = Creature.getRemainingHp(creature)) === null || _a === void 0 ? void 0 : _a.toString()) !== null && _b !== void 0 ? _b : "-";
         let hp = Creature.getRemainingHp(creature);
         remainingHpCell.innerText = (_c = hp === null || hp === void 0 ? void 0 : hp.toString()) !== null && _c !== void 0 ? _c : "-";
@@ -159,6 +169,75 @@ function addRow(creature) {
         saveData();
     });
     cureCell.appendChild(cureButton);
+    let referenceCell = document.createElement("td");
+    let referenceLink = document.createElement("a");
+    let referenceField = document.createElement("input");
+    let referenceUrlField = document.createElement("input");
+    referenceLink.innerText = creature.reference != "" ? creature.reference : creature.referenceUrl;
+    referenceLink.href = creature.referenceUrl;
+    referenceLink.target = "_blank";
+    referenceLink.classList.toggle("inactiveLink", creature.referenceUrl == "");
+    referenceField.type = "text";
+    referenceField.placeholder = "Display Name";
+    referenceField.className = "hidden";
+    referenceField.value = creature.reference;
+    referenceUrlField.type = "text";
+    referenceUrlField.placeholder = "URL";
+    referenceUrlField.className = "hidden";
+    referenceUrlField.value = creature.referenceUrl;
+    referenceCell.appendChild(referenceLink);
+    referenceCell.appendChild(referenceField);
+    referenceCell.appendChild(referenceUrlField);
+    let editReferenceCell = document.createElement("td");
+    let editReferenceButton = document.createElement("button");
+    let editReferenceIcon = document.createElement("i");
+    let editing = false;
+    editReferenceIcon.className = "fa-solid fa-pen-to-square";
+    editReferenceButton.addEventListener("click", () => {
+        editing = !editing;
+        referenceField.classList.toggle("hidden", !editing);
+        referenceUrlField.classList.toggle("hidden", !editing);
+        referenceLink.classList.toggle("hidden", editing);
+        if (!editing) {
+            creature.referenceUrl = referenceUrlField.value;
+            referenceLink.href = creature.referenceUrl;
+            referenceLink.classList.toggle("inactiveLink", creature.referenceUrl == "");
+            creature.reference = referenceField.value;
+            referenceLink.innerText = creature.reference != "" ? creature.reference : creature.referenceUrl;
+            saveData();
+        }
+    });
+    editReferenceButton.appendChild(editReferenceIcon);
+    editReferenceCell.appendChild(editReferenceButton);
+    let conditionsCell = document.createElement("td");
+    conditionsCell.contentEditable = "true";
+    conditionsCell.innerText = creature.conditions;
+    conditionsCell.className = "listStyle";
+    conditionsCell.addEventListener("input", () => {
+        creature.conditions = conditionsCell.innerText;
+        saveData();
+    });
+    let notesCell = document.createElement("td");
+    notesCell.contentEditable = "true";
+    notesCell.innerText = creature.notes;
+    notesCell.addEventListener("input", () => {
+        creature.notes = notesCell.innerText;
+        saveData();
+    });
+    let manageCell = document.createElement("td");
+    let deleteButton = document.createElement("button");
+    let deleteIcon = document.createElement("i");
+    deleteButton.className = "deleteButton";
+    deleteIcon.className = "fa-solid fa-trash";
+    deleteButton.addEventListener("click", () => {
+        if (confirm(`${creature.name} will be permanently removed`)) {
+            delete creatures[creature.id];
+            newRow.remove();
+            saveData();
+        }
+    });
+    deleteButton.appendChild(deleteIcon);
+    manageCell.appendChild(deleteButton);
     newRow.appendChild(nameCell);
     newRow.appendChild(teamCell);
     newRow.appendChild(initiativeRollCell);
@@ -166,10 +245,15 @@ function addRow(creature) {
     newRow.appendChild(armorClassCell);
     newRow.appendChild(remainingHpCell);
     newRow.appendChild(maxHpCell);
-    newRow.appendChild(damageTakenCell);
-    newRow.appendChild(damageToInflictCureCell);
+    newRow.appendChild(woundsCell);
+    newRow.appendChild(woundsToInflictCureCell);
     newRow.appendChild(inflictCell);
     newRow.appendChild(cureCell);
+    newRow.appendChild(referenceCell);
+    newRow.appendChild(editReferenceCell);
+    newRow.appendChild(conditionsCell);
+    newRow.appendChild(notesCell);
+    newRow.appendChild(manageCell);
     CharacterListElement.appendChild(newRow);
 }
 function addCreature() {
