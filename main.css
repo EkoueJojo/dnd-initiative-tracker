@@ -13,7 +13,7 @@ html, body {
 main {
 	width: 100%;
 	height: 90%;
-	padding: 10px 0;
+	padding: 10px;
 }
 
 table {
@@ -75,6 +75,10 @@ nav button {
 
 .down {
 	background-color: gray;
+}
+
+.currentTurn {
+	border: solid aquamarine;
 }
 
 .woundsToInflictCure {

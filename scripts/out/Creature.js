@@ -13,14 +13,14 @@ const TeamStyles = {
     [Team.Enemy]: "teamEnemy"
 };
 class Creature {
-    constructor(id, name = "", team = Team.Neutral, initiativeModifier = 0, armorClass = 10, maxHp = 8) {
+    constructor(id, name = "", team = Team.Neutral, dexterity = 10, armorClass = 10, maxHp = 8) {
         this.id = id;
         this.name = name.trim();
         if (this.name == "")
             this.name = Creature.DEFAULT_NAME;
         this.team = team;
         this.initiativeRoll = null;
-        this.initiativeModifier = initiativeModifier;
+        this.dexterity = dexterity;
         this.armorClass = armorClass;
         this.maxHp = maxHp;
         this.wounds = 0;
@@ -31,7 +31,7 @@ class Creature {
         this.referenceUrl = "";
         this.notes = "";
     }
-    static getTeamStyles(creature) { return TeamStyles[creature.team]; }
+    static getTeamStyle(creature) { return TeamStyles[creature.team]; }
     static getRemainingHp(creature) {
         if (creature.maxHp === null) {
             return null;
@@ -54,7 +54,7 @@ class Creature {
         }
     }
     static compareTo(a, b) {
-        let teamComparison = a.team - b.team;
+        let teamComparison = Math.sign(a.team - b.team);
         return teamComparison != 0 ? teamComparison : a.name.localeCompare(b.name);
     }
     static compareInitiativeTo(a, b) {
@@ -66,7 +66,7 @@ class Creature {
         if (initiativeComparison != 0)
             return initiativeComparison;
         else
-            return Math.sign(b.initiativeModifier - a.initiativeModifier);
+            return Math.sign(b.dexterity - a.dexterity);
     }
 }
 Creature.autoIncrement = 1;

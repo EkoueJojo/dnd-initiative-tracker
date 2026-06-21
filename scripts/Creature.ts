@@ -20,7 +20,7 @@ class Creature {
 	name: string;
 	team: Team;
 	initiativeRoll: number | null;
-	initiativeModifier: number;
+	dexterity: number;
 	armorClass: number;
 
 	maxHp: number | null;
@@ -32,13 +32,13 @@ class Creature {
 	referenceUrl: string;
 	notes: string;
 
-	constructor(id: string, name: string = "", team: Team = Team.Neutral, initiativeModifier: number = 0, armorClass: number = 10, maxHp: number | null = 8) {
+	constructor(id: string, name: string = "", team: Team = Team.Neutral, dexterity: number = 10, armorClass: number = 10, maxHp: number | null = 8) {
 		this.id = id;
 		this.name = name.trim();
 		if (this.name == "") this.name = Creature.DEFAULT_NAME;
 		this.team = team;
 		this.initiativeRoll = null;
-		this.initiativeModifier = initiativeModifier;
+		this.dexterity = dexterity;
 		this.armorClass = armorClass;
 		this.maxHp = maxHp;
 		this.wounds = 0;
@@ -50,7 +50,7 @@ class Creature {
 		this.notes = "";
 	}
 
-	static getTeamStyles(creature: Creature): string { return TeamStyles[creature.team]; }
+	static getTeamStyle(creature: Creature): string { return TeamStyles[creature.team]; }
 	static getRemainingHp(creature: Creature): number | null {
 		if (creature.maxHp === null) {
 			return null;
@@ -80,7 +80,7 @@ class Creature {
 	}
 
 	static compareTo(a: Creature, b: Creature): number {
-		let teamComparison = a.team - b.team;
+		let teamComparison = Math.sign(a.team - b.team);
 		return teamComparison != 0 ? teamComparison : a.name.localeCompare(b.name);
 	}
 
@@ -91,6 +91,6 @@ class Creature {
 		let initiativeComparison = Math.sign(b.initiativeRoll - a.initiativeRoll);
 
 		if (initiativeComparison != 0) return initiativeComparison;
-		else return Math.sign(b.initiativeModifier - a.initiativeModifier);
+		else return Math.sign(b.dexterity - a.dexterity);
 	}
 }

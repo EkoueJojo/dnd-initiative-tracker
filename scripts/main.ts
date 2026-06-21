@@ -1,53 +1,107 @@
-enum Columns {
-	Name = 0,
-	Team = 1,
-	InitiativeRoll = 2,
-	InitiativeModifier = 3,
-	ArmorClass = 4,
-	RemainingHp = 5,
-	MaxHp = 6,
-	WoundsTaken = 7,
-	WoundsToInflictCure = 8,
-	InflictButton = 9,
-	CureButton = 10,
-	Reference = 11,
-	ReferenceIsLink = 12,
-	Conditions = 13,
-	Notes = 14,
-	DeleteButton = 15
-}
+const SAVE_KEY = "InitiativeTracker";
 
-const CREATURES_SAVE_KEY = "InitiativeTrackerCreatures";
-const OPTIONS_SAVE_KEY = "InitiativeTrackerOptions";
+const SORT_BY_INITIATIVE_ICON = "fa-solid fa-arrow-down-9-1";
+const SORT_BY_TEAM_ICON = "fa-solid fa-arrow-down-a-z";
+const EDIT_ICON = "fa-solid fa-pen-to-square";
+const DELETE_ICON = "fa-solid fa-trash";
+
+const ROW_ID_PREFIX = "CharacterRow_";
+
+const CURRENT_TURN_CLASS_NAME = "currentTurn";
+const DOWN_CLASS_NAME = "down";
+const WOUNDS_TO_INFLICT_CURE_CLASS_NAME = "woundsToInflictCure";
+const INFLICT_CLASS_NAME = "inflict";
+const CURE_CLASS_NAME = "cure";
+const INACTIVE_LINK_CLASS_NAME = "inactiveLink";
+const HIDDEN_CLASS_NAME = "hidden";
+const LIST_STYLE_CLASS_NAME = "listStyle";
+const DELETE_BUTTON_CLASS_NAME = "deleteButton";
+
+const INFLICT_BUTTON_TEXT = "Inflict";
+const CURE_BUTTON_TEXT = "Cure";
+const EMPTY_VALUE_TEXT = "-";
+const REFERENCE_FIELD_TEXT = "Display Name";
+const REFERENCE_URL_FIELD_TEXT = "URL";
+const SORT_BY_INITIATIVE_TEXT = "Sort by initiative roll and dexterity";
+const SORT_BY_TEAM_TEXT = "Sort by team and name";
 
 const CharacterListElement = document.getElementById("CharacterList") as HTMLTableSectionElement;
+const SortButton = document.getElementById("SortButton") as HTMLButtonElement;
 
 let creatures: { [id: string]: Creature } = {};
 let options = { turnIndex: 0, sortByInitiative: false };
 
 loadData();
 
-function loadData() {
-	let savedCreatures = localStorage.getItem(CREATURES_SAVE_KEY);
-	if (savedCreatures) { creatures = JSON.parse(savedCreatures); }
+function getSortedCreatureIds(byInitiative: boolean = false) {
+	let compareTo = options.sortByInitiative || byInitiative ? Creature.compareInitiativeTo : Creature.compareTo;
+	return Object.keys(creatures).sort((keyA, keyB) => compareTo(creatures[keyA], creatures[keyB]));
+}
 
-	let savedOptions = localStorage.getItem(OPTIONS_SAVE_KEY);
-	if (savedOptions) { options = JSON.parse(savedOptions); }
-
-	for (let id in creatures) {
-		addRow(creatures[id]);
+function highlightCurrentTurn() {
+	for (const element of document.getElementsByClassName(CURRENT_TURN_CLASS_NAME)) {
+		element.classList.remove(CURRENT_TURN_CLASS_NAME);
 	}
+
+	let sortedCreatures = getSortedCreatureIds(true);
+	let upCreatures = sortedCreatures.filter(id => creatures[id].initiativeRoll != null && (Creature.getRemainingHp(creatures[id]) ?? 1) > 0);
+
+	if (upCreatures.length == 0) {
+		options.turnIndex = 0;
+	}
+	else {
+		while (!upCreatures.includes(sortedCreatures[options.turnIndex])) {
+			options.turnIndex++;
+			options.turnIndex %= sortedCreatures.length;
+		}
+	}
+
+	document.getElementById(ROW_ID_PREFIX + sortedCreatures[options.turnIndex])?.firstElementChild?.classList.add(CURRENT_TURN_CLASS_NAME);
+}
+
+function loadData() {
+	let savedData = localStorage.getItem(SAVE_KEY);
+
+	if (savedData) {
+		let parsedData = JSON.parse(savedData) as { creatures: typeof creatures, options: typeof options };
+		creatures = parsedData.creatures;
+		options = parsedData.options;
+	}
+
+	updateSortButton();
+
+	for (let id of getSortedCreatureIds()) {
+		addRow(creatures[id], true);
+	}
+
+	highlightCurrentTurn();
 }
 
 function saveData() {
-	localStorage.setItem(CREATURES_SAVE_KEY, JSON.stringify(creatures));
-	localStorage.setItem(OPTIONS_SAVE_KEY, JSON.stringify(options));
+	localStorage.setItem(SAVE_KEY, JSON.stringify({ creatures: creatures, options: options }));
 }
 
-function addRow(creature: Creature) {
-	let newRow = document.createElement("tr") as HTMLTableRowElement;
-	newRow.className = Creature.getTeamStyles(creature);
-	newRow.classList.toggle("down", (Creature.getRemainingHp(creature) ?? 1) <= 0);
+function findCreatureSortedIndex(creature: Creature) {
+	return getSortedCreatureIds().indexOf(creature.id);
+}
+
+function reinsertRow(row: HTMLTableRowElement, creature: Creature, resetTurn = true) {
+	CharacterListElement.removeChild(row);
+	CharacterListElement.insertBefore(row, CharacterListElement.children[findCreatureSortedIndex(creature)]);
+
+	if (resetTurn) {
+		options.turnIndex = 0;
+		saveData();
+		highlightCurrentTurn();
+	}
+}
+
+function addRow(creature: Creature, append: boolean = false) {
+	let newRow = CharacterListElement.insertRow(append ? -1 : findCreatureSortedIndex(creature));
+	newRow.id = ROW_ID_PREFIX + creature.id;
+
+	newRow.className = Creature.getTeamStyle(creature);
+	newRow.classList.toggle(DOWN_CLASS_NAME, (Creature.getRemainingHp(creature) ?? 1) <= 0);
 
 	let nameCell = document.createElement("td") as HTMLTableCellElement;
 	nameCell.contentEditable = "true";
@@ -59,13 +113,14 @@ function addRow(creature: Creature) {
 			saveData();
 		}
 	});
-
 	nameCell.addEventListener("focusout", () => {
 		if (nameCell.innerText.trim() == "") {
 			creature.name = Creature.DEFAULT_NAME;
 			nameCell.innerText = Creature.DEFAULT_NAME;
 			saveData();
 		}
+
+		reinsertRow(newRow, creature);
 	});
 
 	let teamCell = document.createElement("td") as HTMLTableCellElement;
@@ -83,6 +138,14 @@ function addRow(creature: Creature) {
 	teamSelect.addEventListener("change", () => {
 		creature.team = parseInt(teamSelect.value) as Team;
 		saveData();
+
+		let teamClassName = Creature.getTeamStyle(creature);
+		for (const i in Team) {
+			let team = TeamStyles[parseInt(i) as Team];
+			newRow.classList.toggle(team, team == teamClassName);
+		}
+
+		reinsertRow(newRow, creature);
 	});
 	teamCell.appendChild(teamSelect);
 
@@ -94,19 +157,31 @@ function addRow(creature: Creature) {
 		creature.initiativeRoll = initiativeRollField.value == "" || isNaN(initiativeRollField.valueAsNumber) ? null : initiativeRollField.valueAsNumber;
 		saveData();
 	});
+	initiativeRollField.addEventListener("focusout", () => {
+		reinsertRow(newRow, creature);
+		options.turnIndex = 0;
+		saveData();
+		highlightCurrentTurn();
+	});
 	initiativeRollCell.appendChild(initiativeRollField);
 
-	let initiativeModifierCell = document.createElement("td") as HTMLTableCellElement;
-	let initiativeModifierField = document.createElement("input") as HTMLInputElement;
-	initiativeModifierField.type = "number";
-	initiativeModifierField.value = creature.initiativeModifier.toString();
-	initiativeModifierField.addEventListener("input", () => {
-		let value = initiativeModifierField.valueAsNumber;
+	let dexterityCell = document.createElement("td") as HTMLTableCellElement;
+	let dexterityField = document.createElement("input") as HTMLInputElement;
+	dexterityField.type = "number";
+	dexterityField.value = creature.dexterity.toString();
+	dexterityField.addEventListener("input", () => {
+		let value = dexterityField.valueAsNumber;
 		if (isNaN(value)) return;
-		creature.initiativeModifier = value;
+		creature.dexterity = value;
 		saveData();
 	});
-	initiativeModifierCell.appendChild(initiativeModifierField);
+	dexterityField.addEventListener("focusout", () => {
+		reinsertRow(newRow, creature);
+		options.turnIndex = 0;
+		saveData();
+		highlightCurrentTurn();
+	});
+	dexterityCell.appendChild(dexterityField);
 
 	let armorClassCell = document.createElement("td") as HTMLTableCellElement;
 	let armorClassField = document.createElement("input") as HTMLInputElement;
@@ -139,13 +214,13 @@ function addRow(creature: Creature) {
 	let woundsToInflictCureCell = document.createElement("td") as HTMLTableCellElement;
 	let woundsToInflictCureField = document.createElement("input") as HTMLInputElement;
 	woundsToInflictCureField.type = "number";
-	woundsToInflictCureField.className = "woundsToInflictCure";
+	woundsToInflictCureField.className = WOUNDS_TO_INFLICT_CURE_CLASS_NAME;
 	woundsToInflictCureCell.appendChild(woundsToInflictCureField);
 
 	let inflictCell = document.createElement("td") as HTMLTableCellElement;
 	let inflictButton = document.createElement("button") as HTMLButtonElement;
-	inflictButton.innerText = "Inflict";
-	inflictButton.className = "inflict";
+	inflictButton.innerText = INFLICT_BUTTON_TEXT;
+	inflictButton.className = INFLICT_CLASS_NAME;
 	inflictButton.addEventListener("click", () => {
 		let value = woundsToInflictCureField.valueAsNumber;
 		if (isNaN(value)) {
@@ -155,16 +230,16 @@ function addRow(creature: Creature) {
 		woundsCell.innerText = creature.wounds.toString();
 		woundsToInflictCureField.value = "";
 		let hp = Creature.getRemainingHp(creature);
-		remainingHpCell.innerText = hp?.toString() ?? "-";
-		newRow.classList.toggle("down", hp != null && hp <= 0);
+		remainingHpCell.innerText = hp?.toString() ?? EMPTY_VALUE_TEXT;
+		newRow.classList.toggle(DOWN_CLASS_NAME, hp != null && hp <= 0);
 		saveData();
 	});
 	inflictCell.appendChild(inflictButton);
 
 	let cureCell = document.createElement("td") as HTMLTableCellElement;
 	let cureButton = document.createElement("button") as HTMLButtonElement;
-	cureButton.innerText = "Cure";
-	cureButton.className = "cure";
+	cureButton.innerText = CURE_BUTTON_TEXT;
+	cureButton.className = CURE_CLASS_NAME;
 	cureButton.addEventListener("click", () => {
 		let value = woundsToInflictCureField.valueAsNumber;
 		if (isNaN(value)) {
@@ -173,10 +248,10 @@ function addRow(creature: Creature) {
 		Creature.cureWounds(creature, value);
 		woundsCell.innerText = creature.wounds.toString();
 		woundsToInflictCureField.value = "";
-		remainingHpCell.innerText = Creature.getRemainingHp(creature)?.toString() ?? "-";
+		remainingHpCell.innerText = Creature.getRemainingHp(creature)?.toString() ?? EMPTY_VALUE_TEXT;
 		let hp = Creature.getRemainingHp(creature);
-		remainingHpCell.innerText = hp?.toString() ?? "-";
-		newRow.classList.toggle("down", hp != null && hp <= 0);
+		remainingHpCell.innerText = hp?.toString() ?? EMPTY_VALUE_TEXT;
+		newRow.classList.toggle(DOWN_CLASS_NAME, hp != null && hp <= 0);
 		saveData();
 	});
 	cureCell.appendChild(cureButton);
@@ -188,14 +263,14 @@ function addRow(creature: Creature) {
 	referenceLink.innerText = creature.reference != "" ? creature.reference : creature.referenceUrl;
 	referenceLink.href = creature.referenceUrl;
 	referenceLink.target = "_blank";
-	referenceLink.classList.toggle("inactiveLink", creature.referenceUrl == "");
+	referenceLink.classList.toggle(INACTIVE_LINK_CLASS_NAME, creature.referenceUrl == "");
 	referenceField.type = "text";
-	referenceField.placeholder = "Display Name";
-	referenceField.className = "hidden";
+	referenceField.placeholder = REFERENCE_FIELD_TEXT;
+	referenceField.className = HIDDEN_CLASS_NAME;
 	referenceField.value = creature.reference;
 	referenceUrlField.type = "text";
-	referenceUrlField.placeholder = "URL";
-	referenceUrlField.className = "hidden";
+	referenceUrlField.placeholder = REFERENCE_URL_FIELD_TEXT;
+	referenceUrlField.className = HIDDEN_CLASS_NAME;
 	referenceUrlField.value = creature.referenceUrl;
 	referenceCell.appendChild(referenceLink);
 	referenceCell.appendChild(referenceField);
@@ -205,18 +280,18 @@ function addRow(creature: Creature) {
 	let editReferenceButton = document.createElement("button") as HTMLButtonElement;
 	let editReferenceIcon = document.createElement("i") as HTMLElement;
 	let editing = false;
-	editReferenceIcon.className = "fa-solid fa-pen-to-square";
+	editReferenceIcon.className = EDIT_ICON;
 	editReferenceButton.addEventListener("click", () => {
 		editing = !editing;
 
-		referenceField.classList.toggle("hidden", !editing);
-		referenceUrlField.classList.toggle("hidden", !editing);
-		referenceLink.classList.toggle("hidden", editing);
+		referenceField.classList.toggle(HIDDEN_CLASS_NAME, !editing);
+		referenceUrlField.classList.toggle(HIDDEN_CLASS_NAME, !editing);
+		referenceLink.classList.toggle(HIDDEN_CLASS_NAME, editing);
 
 		if (!editing) {
 			creature.referenceUrl = referenceUrlField.value;
 			referenceLink.href = creature.referenceUrl;
-			referenceLink.classList.toggle("inactiveLink", creature.referenceUrl == "");
+			referenceLink.classList.toggle(INACTIVE_LINK_CLASS_NAME, creature.referenceUrl == "");
 
 			creature.reference = referenceField.value;
 			referenceLink.innerText = creature.reference != "" ? creature.reference : creature.referenceUrl;
@@ -230,7 +305,7 @@ function addRow(creature: Creature) {
 	let conditionsCell = document.createElement("td") as HTMLTableCellElement;
 	conditionsCell.contentEditable = "true";
 	conditionsCell.innerText = creature.conditions;
-	conditionsCell.className = "listStyle";
+	conditionsCell.className = LIST_STYLE_CLASS_NAME;
 	conditionsCell.addEventListener("input", () => {
 		creature.conditions = conditionsCell.innerText;
 		saveData();
@@ -247,13 +322,22 @@ function addRow(creature: Creature) {
 	let manageCell = document.createElement("td") as HTMLTableCellElement;
 	let deleteButton = document.createElement("button") as HTMLButtonElement;
 	let deleteIcon = document.createElement("i") as HTMLElement;
-	deleteButton.className = "deleteButton";
-	deleteIcon.className = "fa-solid fa-trash";
+	deleteButton.className = DELETE_BUTTON_CLASS_NAME;
+	deleteIcon.className = DELETE_ICON;
 	deleteButton.addEventListener("click", () => {
 		if (confirm(`${creature.name} will be permanently removed`)) {
+			let creatureIds = getSortedCreatureIds(true);
+			let idCurrentTurn = creatureIds[options.turnIndex];
+
 			delete creatures[creature.id];
 			newRow.remove();
+
+			if (idCurrentTurn != creature.id) {
+				options.turnIndex = creatureIds.indexOf(idCurrentTurn);
+			}
+
 			saveData();
+			highlightCurrentTurn();
 		}
 	});
 	deleteButton.appendChild(deleteIcon);
@@ -262,7 +346,7 @@ function addRow(creature: Creature) {
 	newRow.appendChild(nameCell);
 	newRow.appendChild(teamCell);
 	newRow.appendChild(initiativeRollCell);
-	newRow.appendChild(initiativeModifierCell);
+	newRow.appendChild(dexterityCell);
 	newRow.appendChild(armorClassCell);
 	newRow.appendChild(remainingHpCell);
 	newRow.appendChild(maxHpCell);
@@ -275,7 +359,6 @@ function addRow(creature: Creature) {
 	newRow.appendChild(conditionsCell);
 	newRow.appendChild(notesCell);
 	newRow.appendChild(manageCell);
-	CharacterListElement.appendChild(newRow);
 }
 
 function addCreature() {
@@ -283,10 +366,40 @@ function addCreature() {
 		Creature.autoIncrement++;
 	}
 
+	let creatureIds = getSortedCreatureIds(true);
+	let idCurrentTurn = creatureIds[options.turnIndex];
+
 	let id = (Creature.autoIncrement++).toString();
 	creatures[id] = new Creature(id);
 
+	options.turnIndex = creatureIds.indexOf(idCurrentTurn);
 	saveData();
 
 	addRow(creatures[id]);
+}
+
+function endTurn() {
+	options.turnIndex++;
+	options.turnIndex %= Object.keys(creatures).length;
+	saveData();
+	highlightCurrentTurn();
+}
+
+function switchSortingMode() {
+	options.sortByInitiative = !options.sortByInitiative;
+	saveData();
+	updateSortButton();
+
+	for (const id of getSortedCreatureIds()) {
+		let row = document.getElementById(ROW_ID_PREFIX + id) as HTMLTableRowElement;
+		reinsertRow(row, creatures[id], false);
+	}
+}
+
+function updateSortButton() {
+	let sortIcon = document.createElement("i") as HTMLElement;
+	sortIcon.className = options.sortByInitiative ? SORT_BY_INITIATIVE_ICON : SORT_BY_TEAM_ICON;
+	SortButton.innerHTML = "";
+	SortButton.title = options.sortByInitiative ? SORT_BY_TEAM_TEXT : SORT_BY_INITIATIVE_TEXT;
+	SortButton.appendChild(sortIcon);
 }
