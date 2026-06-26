@@ -109,6 +109,11 @@ nav button {
 	text-wrap-mode: nowrap;
 }
 
+.duplicateButton {
+	color: white;
+	background-color: mediumblue;
+}
+
 .deleteButton {
 	color: white;
 	background-color: red;

@@ -3,6 +3,7 @@ const SAVE_KEY = "InitiativeTracker";
 const SORT_BY_INITIATIVE_ICON = "fa-solid fa-arrow-down-9-1";
 const SORT_BY_TEAM_ICON = "fa-solid fa-arrow-down-a-z";
 const EDIT_ICON = "fa-solid fa-pen-to-square";
+const DUPLICATE_ICON = "fa-solid fa-clone";
 const DELETE_ICON = "fa-solid fa-trash";
 
 const ROW_ID_PREFIX = "CharacterRow_";
@@ -15,6 +16,7 @@ const CURE_CLASS_NAME = "cure";
 const INACTIVE_LINK_CLASS_NAME = "inactiveLink";
 const HIDDEN_CLASS_NAME = "hidden";
 const LIST_STYLE_CLASS_NAME = "listStyle";
+const DUPLICATE_BUTTON_CLASS_NAME = "duplicateButton";
 const DELETE_BUTTON_CLASS_NAME = "deleteButton";
 
 const INFLICT_BUTTON_TEXT = "Inflict";
@@ -320,10 +322,22 @@ function addRow(creature: Creature, append: boolean = false) {
 	});
 
 	let manageCell = document.createElement("td") as HTMLTableCellElement;
+	let duplicateButton = document.createElement("button") as HTMLButtonElement;
+	let duplicateIcon = document.createElement("i") as HTMLElement;
 	let deleteButton = document.createElement("button") as HTMLButtonElement;
 	let deleteIcon = document.createElement("i") as HTMLElement;
+	duplicateButton.className = DUPLICATE_BUTTON_CLASS_NAME;
+	duplicateIcon.className = DUPLICATE_ICON;
 	deleteButton.className = DELETE_BUTTON_CLASS_NAME;
 	deleteIcon.className = DELETE_ICON;
+	duplicateButton.addEventListener("click", () => {
+		let clone = structuredClone(creature);
+		updateIdAutoIncrement();
+		clone.id = (Creature.autoIncrement++).toString();
+		creatures[clone.id] = clone;
+		addRow(clone);
+		saveData();
+	});
 	deleteButton.addEventListener("click", () => {
 		if (confirm(`${creature.name} will be permanently removed`)) {
 			let creatureIds = getSortedCreatureIds(true);
@@ -340,7 +354,10 @@ function addRow(creature: Creature, append: boolean = false) {
 			highlightCurrentTurn();
 		}
 	});
+
+	duplicateButton.appendChild(duplicateIcon);
 	deleteButton.appendChild(deleteIcon);
+	manageCell.appendChild(duplicateButton);
 	manageCell.appendChild(deleteButton);
 
 	newRow.appendChild(nameCell);
@@ -361,11 +378,14 @@ function addRow(creature: Creature, append: boolean = false) {
 	newRow.appendChild(manageCell);
 }
 
-function addCreature() {
+function updateIdAutoIncrement() {
 	while (Object.keys(creatures).includes(Creature.autoIncrement.toString())) {
 		Creature.autoIncrement++;
 	}
+}
 
+function addCreature() {
+	updateIdAutoIncrement();
 	let creatureIds = getSortedCreatureIds(true);
 	let idCurrentTurn = creatureIds[options.turnIndex];
 
