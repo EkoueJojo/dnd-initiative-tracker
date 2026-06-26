@@ -176,7 +176,9 @@ function addRow(creature, append = false) {
     maxHpField.type = "number";
     maxHpField.value = (_g = (_f = creature.maxHp) === null || _f === void 0 ? void 0 : _f.toString()) !== null && _g !== void 0 ? _g : "-";
     maxHpField.addEventListener("input", () => {
+        var _a, _b;
         creature.maxHp = maxHpField.value == "" || isNaN(maxHpField.valueAsNumber) ? null : maxHpField.valueAsNumber;
+        remainingHpCell.innerText = (_b = (_a = Creature.getRemainingHp(creature)) === null || _a === void 0 ? void 0 : _a.toString()) !== null && _b !== void 0 ? _b : "-";
         saveData();
     });
     maxHpCell.appendChild(maxHpField);
@@ -333,6 +335,7 @@ function addRow(creature, append = false) {
     newRow.appendChild(manageCell);
 }
 function updateIdAutoIncrement() {
+    Creature.autoIncrement = 1;
     while (Object.keys(creatures).includes(Creature.autoIncrement.toString())) {
         Creature.autoIncrement++;
     }

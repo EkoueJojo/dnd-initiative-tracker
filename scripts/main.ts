@@ -206,6 +206,7 @@ function addRow(creature: Creature, append: boolean = false) {
 	maxHpField.value = creature.maxHp?.toString() ?? "-";
 	maxHpField.addEventListener("input", () => {
 		creature.maxHp = maxHpField.value == "" || isNaN(maxHpField.valueAsNumber) ? null : maxHpField.valueAsNumber;
+		remainingHpCell.innerText = Creature.getRemainingHp(creature)?.toString() ?? "-";
 		saveData();
 	});
 	maxHpCell.appendChild(maxHpField);
@@ -379,6 +380,8 @@ function addRow(creature: Creature, append: boolean = false) {
 }
 
 function updateIdAutoIncrement() {
+	Creature.autoIncrement = 1;
+
 	while (Object.keys(creatures).includes(Creature.autoIncrement.toString())) {
 		Creature.autoIncrement++;
 	}
