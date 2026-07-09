@@ -23,6 +23,7 @@ class Creature {
         this.dexterity = dexterity;
         this.armorClass = armorClass;
         this.maxHp = maxHp;
+        this.temporaryHp = 0;
         this.wounds = 0;
         this.hpLowerRange = null;
         this.hpUpperRange = null;
@@ -42,7 +43,11 @@ class Creature {
         if (creature.maxHp == null || amount < 0) {
             return;
         }
-        creature.wounds += amount;
+        creature.temporaryHp -= amount;
+        if (creature.temporaryHp < 0) {
+            creature.wounds -= creature.temporaryHp;
+            creature.temporaryHp = 0;
+        }
     }
     static cureWounds(creature, amount) {
         if (creature.maxHp == null || amount < 0) {

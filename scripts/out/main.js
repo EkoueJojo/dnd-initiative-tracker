@@ -11,6 +11,7 @@ const DOWN_CLASS_NAME = "down";
 const WOUNDS_TO_INFLICT_CURE_CLASS_NAME = "woundsToInflictCure";
 const INFLICT_CLASS_NAME = "inflict";
 const CURE_CLASS_NAME = "cure";
+const SET_TEMPORARY_CLASS_NAME = "temporaryHp";
 const INACTIVE_LINK_CLASS_NAME = "inactiveLink";
 const HIDDEN_CLASS_NAME = "hidden";
 const LIST_STYLE_CLASS_NAME = "listStyle";
@@ -18,6 +19,7 @@ const DUPLICATE_BUTTON_CLASS_NAME = "duplicateButton";
 const DELETE_BUTTON_CLASS_NAME = "deleteButton";
 const INFLICT_BUTTON_TEXT = "Inflict";
 const CURE_BUTTON_TEXT = "Cure";
+const SET_TEMPORARY_BUTTON_TEXT = "Set temp";
 const EMPTY_VALUE_TEXT = "-";
 const REFERENCE_FIELD_TEXT = "Display Name";
 const REFERENCE_URL_FIELD_TEXT = "URL";
@@ -121,7 +123,7 @@ function addRow(creature, append = false) {
             let team = TeamStyles[parseInt(i)];
             newRow.classList.toggle(team, team == teamClassName);
         }
-        reinsertRow(newRow, creature);
+        reinsertRow(newRow, creature, false);
     });
     teamCell.appendChild(teamSelect);
     let initiativeRollCell = document.createElement("td");
@@ -129,14 +131,14 @@ function addRow(creature, append = false) {
     initiativeRollField.type = "number";
     initiativeRollField.value = (_c = (_b = creature.initiativeRoll) === null || _b === void 0 ? void 0 : _b.toString()) !== null && _c !== void 0 ? _c : "";
     initiativeRollField.addEventListener("input", () => {
+        let creatureIds = getSortedCreatureIds(true);
+        let idCurrentTurn = creatureIds[options.turnIndex];
         creature.initiativeRoll = initiativeRollField.value == "" || isNaN(initiativeRollField.valueAsNumber) ? null : initiativeRollField.valueAsNumber;
+        options.turnIndex = getSortedCreatureIds(true).indexOf(idCurrentTurn);
         saveData();
     });
     initiativeRollField.addEventListener("focusout", () => {
-        reinsertRow(newRow, creature);
-        options.turnIndex = 0;
-        saveData();
-        highlightCurrentTurn();
+        reinsertRow(newRow, creature, false);
     });
     initiativeRollCell.appendChild(initiativeRollField);
     let dexterityCell = document.createElement("td");
@@ -147,14 +149,14 @@ function addRow(creature, append = false) {
         let value = dexterityField.valueAsNumber;
         if (isNaN(value))
             return;
+        let creatureIds = getSortedCreatureIds(true);
+        let idCurrentTurn = creatureIds[options.turnIndex];
         creature.dexterity = value;
+        options.turnIndex = getSortedCreatureIds(true).indexOf(idCurrentTurn);
         saveData();
     });
     dexterityField.addEventListener("focusout", () => {
-        reinsertRow(newRow, creature);
-        options.turnIndex = 0;
-        saveData();
-        highlightCurrentTurn();
+        reinsertRow(newRow, creature, false);
     });
     dexterityCell.appendChild(dexterityField);
     let armorClassCell = document.createElement("td");
@@ -170,7 +172,15 @@ function addRow(creature, append = false) {
     });
     armorClassCell.appendChild(armorClassField);
     let remainingHpCell = document.createElement("td");
-    remainingHpCell.innerText = (_e = (_d = Creature.getRemainingHp(creature)) === null || _d === void 0 ? void 0 : _d.toString()) !== null && _e !== void 0 ? _e : "-";
+    let remainingHpContainer = document.createElement("span");
+    remainingHpContainer.innerText = (_e = (_d = Creature.getRemainingHp(creature)) === null || _d === void 0 ? void 0 : _d.toString()) !== null && _e !== void 0 ? _e : "-";
+    let temporaryHpContainer = document.createElement("span");
+    temporaryHpContainer.className = SET_TEMPORARY_CLASS_NAME;
+    if (creature.temporaryHp > 0) {
+        temporaryHpContainer.innerText = "+" + creature.temporaryHp;
+    }
+    remainingHpCell.appendChild(remainingHpContainer);
+    remainingHpCell.appendChild(temporaryHpContainer);
     let maxHpCell = document.createElement("td");
     let maxHpField = document.createElement("input");
     maxHpField.type = "number";
@@ -178,7 +188,7 @@ function addRow(creature, append = false) {
     maxHpField.addEventListener("input", () => {
         var _a, _b;
         creature.maxHp = maxHpField.value == "" || isNaN(maxHpField.valueAsNumber) ? null : maxHpField.valueAsNumber;
-        remainingHpCell.innerText = (_b = (_a = Creature.getRemainingHp(creature)) === null || _a === void 0 ? void 0 : _a.toString()) !== null && _b !== void 0 ? _b : "-";
+        remainingHpContainer.innerText = (_b = (_a = Creature.getRemainingHp(creature)) === null || _a === void 0 ? void 0 : _a.toString()) !== null && _b !== void 0 ? _b : "-";
         saveData();
     });
     maxHpCell.appendChild(maxHpField);
@@ -203,7 +213,8 @@ function addRow(creature, append = false) {
         woundsCell.innerText = creature.wounds.toString();
         woundsToInflictCureField.value = "";
         let hp = Creature.getRemainingHp(creature);
-        remainingHpCell.innerText = (_a = hp === null || hp === void 0 ? void 0 : hp.toString()) !== null && _a !== void 0 ? _a : EMPTY_VALUE_TEXT;
+        remainingHpContainer.innerText = (_a = hp === null || hp === void 0 ? void 0 : hp.toString()) !== null && _a !== void 0 ? _a : EMPTY_VALUE_TEXT;
+        temporaryHpContainer.innerText = creature.temporaryHp > 0 ? "+" + creature.temporaryHp : "";
         newRow.classList.toggle(DOWN_CLASS_NAME, hp != null && hp <= 0);
         saveData();
     });
@@ -213,7 +224,7 @@ function addRow(creature, append = false) {
     cureButton.innerText = CURE_BUTTON_TEXT;
     cureButton.className = CURE_CLASS_NAME;
     cureButton.addEventListener("click", () => {
-        var _a, _b, _c;
+        var _a;
         let value = woundsToInflictCureField.valueAsNumber;
         if (isNaN(value)) {
             return;
@@ -221,13 +232,27 @@ function addRow(creature, append = false) {
         Creature.cureWounds(creature, value);
         woundsCell.innerText = creature.wounds.toString();
         woundsToInflictCureField.value = "";
-        remainingHpCell.innerText = (_b = (_a = Creature.getRemainingHp(creature)) === null || _a === void 0 ? void 0 : _a.toString()) !== null && _b !== void 0 ? _b : EMPTY_VALUE_TEXT;
         let hp = Creature.getRemainingHp(creature);
-        remainingHpCell.innerText = (_c = hp === null || hp === void 0 ? void 0 : hp.toString()) !== null && _c !== void 0 ? _c : EMPTY_VALUE_TEXT;
+        remainingHpContainer.innerText = (_a = hp === null || hp === void 0 ? void 0 : hp.toString()) !== null && _a !== void 0 ? _a : EMPTY_VALUE_TEXT;
         newRow.classList.toggle(DOWN_CLASS_NAME, hp != null && hp <= 0);
         saveData();
     });
     cureCell.appendChild(cureButton);
+    let setTemporaryCell = document.createElement("td");
+    let setTemporaryButton = document.createElement("button");
+    setTemporaryButton.innerText = SET_TEMPORARY_BUTTON_TEXT;
+    setTemporaryButton.className = SET_TEMPORARY_CLASS_NAME;
+    setTemporaryButton.addEventListener("click", () => {
+        let value = woundsToInflictCureField.valueAsNumber;
+        if (isNaN(value) || value < 0) {
+            return;
+        }
+        creature.temporaryHp = value;
+        temporaryHpContainer.innerText = creature.temporaryHp > 0 ? "+" + creature.temporaryHp : "";
+        woundsToInflictCureField.value = "";
+        saveData();
+    });
+    setTemporaryCell.appendChild(setTemporaryButton);
     let referenceCell = document.createElement("td");
     let referenceLink = document.createElement("a");
     let referenceField = document.createElement("input");
@@ -328,6 +353,7 @@ function addRow(creature, append = false) {
     newRow.appendChild(woundsToInflictCureCell);
     newRow.appendChild(inflictCell);
     newRow.appendChild(cureCell);
+    newRow.appendChild(setTemporaryCell);
     newRow.appendChild(referenceCell);
     newRow.appendChild(editReferenceCell);
     newRow.appendChild(conditionsCell);

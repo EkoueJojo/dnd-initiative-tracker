@@ -94,6 +94,10 @@ nav button {
 	color: lightseagreen;
 }
 
+.temporaryHp {
+	color: lightsalmon;
+}
+
 .inactiveLink {
 	pointer-events: none;
 	text-decoration: none;
