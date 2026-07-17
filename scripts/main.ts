@@ -1,4 +1,5 @@
 const SAVE_KEY = "InitiativeTracker";
+const EXPORT_FILENAME = "DndInitiativeExport.json";
 
 const SORT_BY_INITIATIVE_ICON = "fa-solid fa-arrow-down-9-1";
 const SORT_BY_TEAM_ICON = "fa-solid fa-arrow-down-a-z";
@@ -22,7 +23,7 @@ const DELETE_BUTTON_CLASS_NAME = "deleteButton";
 
 const INFLICT_BUTTON_TEXT = "Inflict";
 const CURE_BUTTON_TEXT = "Cure";
-const SET_TEMPORARY_BUTTON_TEXT = "Set temp";
+const SET_TEMPORARY_BUTTON_TEXT = "Temp";
 const EMPTY_VALUE_TEXT = "-";
 const REFERENCE_FIELD_TEXT = "Display Name";
 const REFERENCE_URL_FIELD_TEXT = "URL";
@@ -31,6 +32,8 @@ const SORT_BY_TEAM_TEXT = "Sort by team and name";
 
 const CharacterListElement = document.getElementById("CharacterList") as HTMLTableSectionElement;
 const SortButton = document.getElementById("SortButton") as HTMLButtonElement;
+const ImportDataFileInput = document.getElementById("ImportDataFileInput") as HTMLInputElement;
+const ImportErrorContainer = document.getElementById("ImportErrorContainer") as HTMLDivElement;
 
 let creatures: { [id: string]: Creature } = {};
 let options = { turnIndex: 0, sortByInitiative: false };
@@ -81,8 +84,12 @@ function loadData() {
 	highlightCurrentTurn();
 }
 
+function serializedData() {
+	return JSON.stringify({ creatures: creatures, options: options });
+}
+
 function saveData() {
-	localStorage.setItem(SAVE_KEY, JSON.stringify({ creatures: creatures, options: options }));
+	localStorage.setItem(SAVE_KEY, serializedData());
 }
 
 function findCreatureSortedIndex(creature: Creature) {
@@ -453,4 +460,58 @@ function updateSortButton() {
 	SortButton.innerHTML = "";
 	SortButton.title = options.sortByInitiative ? SORT_BY_TEAM_TEXT : SORT_BY_INITIATIVE_TEXT;
 	SortButton.appendChild(sortIcon);
+}
+
+function importData() {
+	if (ImportDataFileInput.files!.length < 1) {
+		ImportErrorContainer.innerText = "No file selected";
+		return;
+	}
+
+	ImportDataFileInput.files![0].text().then(
+		(text) => {
+			try {
+				JSON.parse(text);
+			} catch (error) {
+				ImportErrorContainer.innerText = "The file's content is not valid JSON";
+				return;
+			}
+
+			let backup = serializedData();
+
+			if (!confirm("Are you sure you want to import the file ? Currently saved data will be overwritten. ")) {
+				ImportErrorContainer.innerText = "";
+				return;
+			}
+
+			localStorage.setItem(SAVE_KEY, text);
+
+			try {
+				CharacterListElement.innerHTML = "";
+				loadData();
+			} catch (error) {
+				ImportErrorContainer.innerText = "Unable to parse data from the file's content";
+				localStorage.setItem(SAVE_KEY, backup);
+				loadData();
+				return;
+			}
+
+			ImportErrorContainer.innerText = "";
+		}
+	);
+}
+
+function exportData() {
+	let data = serializedData();
+
+	let element = document.createElement("a");
+	element.setAttribute("href", "data:text/plain;charset=utf-8," + encodeURIComponent(data));
+	element.setAttribute("download", EXPORT_FILENAME);
+
+	element.style.display = "none";
+	document.body.appendChild(element);
+
+	element.click();
+
+	document.body.removeChild(element);
 }

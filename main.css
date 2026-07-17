@@ -16,6 +16,10 @@ main {
 	padding: 10px;
 }
 
+section {
+	padding: 5px;
+}
+
 table {
 	border-collapse: collapse;
 	margin: auto;
@@ -121,6 +125,10 @@ nav button {
 .deleteButton {
 	color: white;
 	background-color: red;
+}
+
+.error {
+	color: red;
 }
 
 #AddButton {

@@ -12,29 +12,38 @@
 
 <body>
 	<main>
-		<table>
-			<thead>
-				<tr>
-					<th>Name</th>
-					<th>Team</th>
-					<th>Initiative Roll</th>
-					<th>Dexterity</th>
-					<th>Armor Class</th>
-					<th>Remaining HP</th>
-					<th>Max HP</th>
-					<th colspan="5">Wounds</th>
-					<th colspan="2">Reference</th>
-					<th>Conditions</th>
-					<th>Notes</th>
-					<th>Manage</th>
-				</tr>
-			</thead>
-			<tbody id="CharacterList"></tbody>
-		</table>
+		<section>
+			<table>
+				<thead>
+					<tr>
+						<th>Name</th>
+						<th>Team</th>
+						<th>Initiative Roll</th>
+						<th>Dexterity</th>
+						<th>Armor Class</th>
+						<th>Remaining HP</th>
+						<th>Max HP</th>
+						<th colspan="5">Wounds</th>
+						<th colspan="2">Reference</th>
+						<th>Conditions</th>
+						<th>Notes</th>
+						<th>Manage</th>
+					</tr>
+				</thead>
+				<tbody id="CharacterList"></tbody>
+			</table>
+		</section>
+		<section>
+			<label>Import data from file : <input type="file" name="ImportDataFileInput" id="ImportDataFileInput" accept="application/json"></label>
+			<button onclick="importData()" title="Import creatures from a JSON file">Import</button>
+			<button onclick="exportData()" title="Export creatures by downloading them in a JSON file">Export</button>
+			<div id="ImportErrorContainer" class="error"></div>
+		</section>
 	</main>
 	<nav>
 		<button id="AddButton" onclick="addCreature()" title="Add a creature"><i class="fa-solid fa-plus"></i></button>
-		<button id="NextTurnButton" onclick="endTurn()" title="End current turn"><i class="fa-solid fa-arrow-down"></i></button>
+		<button id="NextTurnButton" onclick="endTurn()" title="End current turn"><i
+				class="fa-solid fa-arrow-down"></i></button>
 		<button id="SortButton" onclick="switchSortingMode()"><i class="fa-solid fa-arrow-down-a-z"></i></button>
 	</nav>
 	<script src="./scripts/out/Creature.js"></script>
